@@ -5,8 +5,7 @@ import { FieldSpecs, GlobalSpec, PersistenceInfo } from "./types";
 /**
  * Decorator to add persistence information to a model.
  * 
- * @param dbName - The name of the database to use.
- * @param tableName - The name of the table to use.
+ * @param adapter - The adapter to use.
  * @param fieldSpecs - The `FieldSpecs` to use.
  * @param globalSpec - The `GlobalSpec` to use.
  * @returns A decorator function.

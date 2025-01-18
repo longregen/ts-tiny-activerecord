@@ -1,5 +1,5 @@
 import { AdapterConfig, Model } from "../src";
-import sqlite3 from "sqlite3";
+import * as sqlite3 from "sqlite3";
 import { Database, open } from "sqlite";
 
 type Context = {

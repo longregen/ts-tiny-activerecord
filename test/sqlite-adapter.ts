@@ -30,21 +30,23 @@ export function createSqliteAdapter<T>(dbName: string, tableName: string): Adapt
     return res || null;
   }
 
-  async function saveToDb(context: Context, model: Model<T, Context>, fields: (keyof T)[]) {
+  async function saveToDb(context: Context, model: Model<T, Context>, data: Partial<T>) {
     let id: string;
     let query: string;
     let bindValues: any[];
+    const fields = Object.keys(data);
+
     if (model.persisted) {
       id = model.id;
-      query = `UPDATE ${tableName} SET ${fields.map((field, idx) => `${String(field)} = $${idx + 2}`).join(", ")} WHERE id = $1`;
-      bindValues = [id, ...fields.map(field => model.get(field))]
+      query = `UPDATE ${tableName} SET ${fields.map((field) => `${String(field)} = ?`).join(", ")} WHERE id = ?`;
+      bindValues = [...fields.map(field => data[field as keyof T]), id]
     } else {
       id = model.id || generateId();
-      query = `INSERT INTO ${tableName} (id, ${fields.join(", ")}) VALUES ($1, ${fields.map((_, idx) => `$${idx + 2}`).join(", ")})`;
-      bindValues = [id, ...fields.map(field => model.get(field))]
+      query = `INSERT INTO ${tableName} (id, ${fields.join(", ")}) VALUES (?, ${fields.map(() => "?").join(", ")})`;
+      bindValues = [id, ...fields.map(field => data[field as keyof T])]
     }
 
-    await context.db.run(query, bindValues);
+    const res = await context.db.run(query, bindValues);
     return { success: true, inserted: !model.persisted, id: id };
   }
 

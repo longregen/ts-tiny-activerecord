@@ -136,11 +136,11 @@ export class Model<T, C = any> {
     const context = await adapter.getContext();
     const row = await adapter.getFromDb(context, id);
     if (!row) return null;
-    const model = new this(row, true) as M;
+    const model = (this as any).fromRow(row);
     if (globalSpec?.postLoad) {
       return globalSpec.postLoad(context, model);
     }
-    return model;
+    return model as M;
   }
 
   /**
@@ -153,7 +153,7 @@ export class Model<T, C = any> {
     this: new (...args: any[]) => M,
     row: any & { id: string }
   ): M {
-    const { fieldSpecs } = (this.constructor as typeof Model).persistence;
+    const { fieldSpecs } = (this as any).persistence;
     const data = {} as any;
     for (const key in row) {
       const fieldSpec = fieldSpecs?.[key];
@@ -178,7 +178,19 @@ export class Model<T, C = any> {
     if (this.persisted && fields.length === 0) return this;
 
     const context = await adapter.getContext();
-    const { success, inserted, id } = await adapter.saveToDb(context, this, fields);
+
+    if (globalSpec?.preSave) {
+      await globalSpec.preSave(context, this);
+    }
+
+    const data: Partial<T> = {};
+    for (const field of fields) {
+      const value = this.get(field);
+      const encoder = fieldSpecs?.[field]?.encoder;
+      data[field] = encoder ? encoder.encode(value) : value;
+    }
+
+    const { success, inserted, id } = await adapter.saveToDb(context, this, data);
     if (!success) throw new Error("Failed to save model to database");
     if (inserted) {
       this.id = id;
@@ -186,6 +198,7 @@ export class Model<T, C = any> {
 
     this._persisted = true;
     this.clearChangedFields();
+
     if (globalSpec?.postSave) {
       return globalSpec.postSave(context, this);
     }

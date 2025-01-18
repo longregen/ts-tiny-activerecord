@@ -84,5 +84,10 @@ describe('Model', () => {
     expect(person.getChangedFields()).toEqual(["firstName"]);
     await person.save();
     expect(person.getChangedFields()).toEqual([]);
+
+    const loadedPerson = await Person.load(person.id);
+    expect(loadedPerson?.get("firstName")).toBe("Robert");
+    expect(loadedPerson?.get("lastName")).toBe("Wilson");
+    expect(loadedPerson?.get("age")).toBe(40);
   });
 });

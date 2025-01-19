@@ -4,7 +4,7 @@ import { WithId } from "./types";
 export interface SaveResult {
   success: boolean;
   inserted: boolean;
-  id?: string;
+  id?: any;
   rows: number;
 }
 

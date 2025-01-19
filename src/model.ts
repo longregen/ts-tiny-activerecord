@@ -68,7 +68,7 @@ export class Model<T, C = any> {
    * @param data - The data to initialize the model with.
    * @param persisted - Whether the model is already persisted to the database.
    */
-  constructor(data: T & { id?: string }, persisted: boolean = false) {
+  constructor(data: T & { id?: any }, persisted: boolean = false) {
     // TODO: generate ID using context
     this.id = data.id;
     const { id, ...rest } = data;
@@ -166,7 +166,7 @@ export class Model<T, C = any> {
    */
   public static async get<T, M extends Model<T, C>, C = any>(
     this: new (...args: any[]) => M & Model<T, C>,
-    id: string
+    id: any
   ): Promise<M | null> {
     const { adapter, globalSpec } = (this as unknown as typeof Model<T, C>).getPersistence();
     const context = await adapter.getContext();

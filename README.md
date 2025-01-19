@@ -187,14 +187,16 @@ Add global hooks for pre/post save and post load operations:
 Create custom adapters for different databases by implementing the `AdapterConfig` interface:
 
 ```typescript
+type WithId<T> = T & { id: any };
+
 interface AdapterConfig<C, T> {
   // Get the database context
   getContext(): Promise<C>;
   
   // Query methods
-  get(context: C, id: any): Promise<(T & { id: string }) | null>;
-  getBy(context: C, matchOrQuery: Partial<T> | string, bindValues?: any[]): Promise<(T & { id: string }) | null>;
-  all(context: C, matchOrQuery?: Partial<T> | string, bindValues?: any[]): Promise<(T & { id: string })[]>;
+  get(context: C, id: any): Promise<WithId<T> | null>;
+  getBy(context: C, matchOrQuery: Partial<T> | string, bindValues?: any[]): Promise<WithId<T> | null>;
+  all(context: C, matchOrQuery?: Partial<T> | string, bindValues?: any[]): Promise<WithId<T>[]>;
   
   // Persistence methods
   insert(context: C, data: Partial<T>): Promise<SaveResult>;
@@ -206,7 +208,7 @@ interface AdapterConfig<C, T> {
 interface SaveResult {
   success: boolean;
   inserted: boolean;
-  id?: string;
+  id?: any;
   rows: number;
 }
 ```

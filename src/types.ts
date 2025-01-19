@@ -1,6 +1,8 @@
 import { AdapterConfig } from "./adapter";
 import { Model } from "./model";
 
+export type WithId<T> = T & { id: string };
+
 /**
  * A `ValueEncoder` is a set of functions that encode and decode values from the database to the model.
  * `encode` is used to convert a value from the model to the database, and `decode` is used to convert a

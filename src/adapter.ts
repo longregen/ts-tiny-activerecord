@@ -1,9 +1,11 @@
 import { Model } from "./model";
+import { WithId } from "./types";
 
 export interface SaveResult {
   success: boolean;
   inserted: boolean;
   id?: string;
+  rows: number;
 }
 
 /**
@@ -14,6 +16,10 @@ export interface SaveResult {
  */
 export type AdapterConfig<C, T> = {
   getContext: () => Promise<C>;
-  getFromDb: (context: C, id: any) => Promise<(T & { id: string }) | null>;
-  saveToDb: (context: C, model: Model<T, C>, data: Partial<T>) => Promise<SaveResult>;
+  all: (context: C, matchOrQuery?: Partial<T> | string, bindValues?: any[]) => Promise<WithId<T>[]>;
+  get: (context: C, id: any) => Promise<WithId<T> | null>;
+  getBy: (context: C, matchOrQuery: Partial<T> | string, bindValues?: any[]) => Promise<WithId<T> | null>;
+  insert: (context: C, data: Partial<T>) => Promise<SaveResult>;
+  update: (context: C, model: Model<T>, data: Partial<T>) => Promise<SaveResult>;
+  del: (context: C, model: Model<T>) => Promise<boolean>;
 }

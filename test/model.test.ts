@@ -27,7 +27,7 @@ describe('Model', () => {
     const adapter = createSqliteAdapter("test_db", "people");
     const ctx = await adapter.getContext();
     await ctx.db.run(
-      "CREATE TABLE IF NOT EXISTS people (id TEXT PRIMARY KEY, firstName TEXT, lastName TEXT, age INTEGER)"
+      "CREATE TABLE IF NOT EXISTS people (id TEXT PRIMARY KEY, first_name TEXT, last_name TEXT, age INTEGER)"
     );
   });
 
@@ -61,7 +61,7 @@ describe('Model', () => {
     });
     await person.save();
 
-    const loadedPerson = await Person.load(person.id);
+    const loadedPerson = await Person.get(person.id);
     expect(loadedPerson).not.toBeNull();
     expect(loadedPerson?.get("firstName")).toBe("Jane");
     expect(loadedPerson?.get("lastName")).toBe("Smith");
@@ -85,7 +85,7 @@ describe('Model', () => {
     await person.save();
     expect(person.getChangedFields()).toEqual([]);
 
-    const loadedPerson = await Person.load(person.id);
+    const loadedPerson = await Person.get(person.id);
     expect(loadedPerson?.get("firstName")).toBe("Robert");
     expect(loadedPerson?.get("lastName")).toBe("Wilson");
     expect(loadedPerson?.get("age")).toBe(40);

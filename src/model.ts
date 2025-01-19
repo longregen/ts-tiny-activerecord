@@ -10,13 +10,27 @@ export class Model<T, C = any> {
   protected _persisted: boolean;
   public id?: any;
 
+  /**
+   * Get the persistence information for this model class.
+   *
+   * @returns The persistence information configured for this model.
+   */
+  public static getPersistence<T, C>() {
+    return this.persistence as PersistenceInfo<T, C>;
+  }
+
+  /**
+   * Check if the model has been persisted to the database.
+   *
+   * @returns True if the model has been persisted, false otherwise.
+   */
   get persisted() {
     return this._persisted;
   }
 
   /**
    * Get the fields that have been changed.
-   * 
+   *
    * @returns An array of the keys of the changed fields.
    */
   public getChangedFields(): (keyof T)[] {
@@ -32,7 +46,7 @@ export class Model<T, C = any> {
 
   /**
    * Manually mark a field as changed.
-   * 
+   *
    * @param field - The key of the field to mark as changed.
    */
   public markChanged(field: keyof T) {
@@ -41,7 +55,7 @@ export class Model<T, C = any> {
 
   /**
    * Manually mark a field as unchanged.
-   * 
+   *
    * @param field - The key of the field to mark as unchanged.
    */
   public markUnchanged(field: keyof T) {
@@ -50,7 +64,7 @@ export class Model<T, C = any> {
 
   /**
    * Constructor for the model.
-   * 
+   *
    * @param data - The data to initialize the model with.
    * @param persisted - Whether the model is already persisted to the database.
    */
@@ -70,7 +84,7 @@ export class Model<T, C = any> {
   /**
    * Set a field on the model and mark it as changed. Alternatively, you can pass a partial object
    * to set multiple fields at once.
-   * 
+   *
    * @param keyOrChanges - The key of the field to set, or a partial object of fields to set.
    * @param value - The value to set the field to, if setting a single field. Ignored otherwise.
    * @returns The model instance.
@@ -94,7 +108,7 @@ export class Model<T, C = any> {
   /**
    * Set a field on the model without marking it as changed. Alternatively, you can pass a partial object
    * to set multiple fields at once.
-   * 
+   *
    * @param keyOrChanges - The key of the field to set, or a partial object of fields to set.
    * @param value - The value to set the field to, if setting a single field. Ignored otherwise.
    * @returns The model instance.
@@ -113,7 +127,7 @@ export class Model<T, C = any> {
 
   /**
    * Get a field from the model.
-   * 
+   *
    * @param key - The key of the field to get.
    * @returns The value of the field.
    */
@@ -122,35 +136,80 @@ export class Model<T, C = any> {
   }
 
   /**
+   * Retrieve all models from the database that match the given criteria.
+   *
+   * @param matchOrQuery - Optional partial object to match against or SQL query string.
+   * @param bindValues - Optional array of values to bind to the query if using a SQL string.
+   * @returns A promise that resolves to an array of matching models.
+   */
+  public static async all<T, M extends Model<T, C>, C = any>(
+    this: new (...args: any[]) => M,
+    matchOrQuery?: Partial<T> | string,
+    bindValues?: any[]
+  ): Promise<M[]> {
+    const { adapter, globalSpec } = (this as unknown as typeof Model<T, C>).getPersistence();
+    const context = await adapter.getContext();
+    const rows = await adapter.all(context, matchOrQuery as any, bindValues);
+    let models = rows.map((this as any).fromRow) as M[];
+    if (globalSpec?.postLoad) {
+      const promises = models.map<Promise<M>>(model => globalSpec?.postLoad?.(context, model as any) as Promise<M>);
+      models = await Promise.all(promises);
+    }
+    return models as M[];
+  }
+
+  /**
    * Load a model from the database.
-   * 
+   *
    * @param id - The ID of the model to load.
    * @returns A promise that resolves to the loaded model, or null if it doesn't exist.
    */
-  public static async load<M extends Model<any, C>, C = any>(
-    this: new (...args: any[]) => M,
+  public static async get<T, M extends Model<T, C>, C = any>(
+    this: new (...args: any[]) => M & Model<T, C>,
     id: string
   ): Promise<M | null> {
-    const { adapter, globalSpec } = (this as any).persistence;
-
+    const { adapter, globalSpec } = (this as unknown as typeof Model<T, C>).getPersistence();
     const context = await adapter.getContext();
-    const row = await adapter.getFromDb(context, id);
+    const row = await adapter.get(context, id);
     if (!row) return null;
-    const model = (this as any).fromRow(row);
+    let model = (this as any).fromRow(row) as M;
     if (globalSpec?.postLoad) {
-      return globalSpec.postLoad(context, model);
+      model = await globalSpec.postLoad(context, model as any) as M;
     }
-    return model as M;
+    return model;
+  }
+
+  /**
+   * Retrieve a single model from the database that matches the given criteria.
+   *
+   * @param matchOrQuery - Partial object to match against or SQL query string.
+   * @param bindValues - Optional array of values to bind to the query if using a SQL string.
+   * @returns A promise that resolves to the matching model, or null if none found.
+   */
+  public static async getBy<T, M extends Model<T, C>, C = any>(
+    this: new (...args: any[]) => M & Model<T, C>,
+    matchOrQuery?: Partial<T> | string,
+    bindValues?: any[]
+  ): Promise<M | null> {
+    const { adapter, globalSpec } = (this as unknown as typeof Model<T, C>).getPersistence();
+    const context = await adapter.getContext();
+    const row = await adapter.getBy(context, matchOrQuery as any, bindValues);
+    if (!row) return null;
+    let model = (this as any).fromRow(row) as M;
+    if (globalSpec?.postLoad) {
+      model = await globalSpec.postLoad(context, model as any) as M;
+    }
+    return model;
   }
 
   /**
    * Create a model from a database row.
-   * 
+   *
    * @param row - The row to create the model from.
    * @returns The created model.
    */
-  protected static fromRow<M extends Model<any, C>, C = any>(
-    this: new (...args: any[]) => M,
+  protected static fromRow<T, M extends Model<T, C>, C = any>(
+    this: new (...args: any[]) => M & Model<T, C>,
     row: any & { id: string }
   ): M {
     const { fieldSpecs } = (this as any).persistence;
@@ -168,10 +227,10 @@ export class Model<T, C = any> {
 
   /**
    * Save the model to the database.
-   * 
+   *
    * @returns A promise that resolves to the model instance.
    */
-  public async save(): Promise<Model<T, C>> {
+  public async save(): Promise<this> {
     const { adapter, fieldSpecs, globalSpec } = (this.constructor as any).persistence as PersistenceInfo<T, C>;
     const fields = this.getChangedFields().filter(field => fieldSpecs?.[field]?.persist !== false);
 
@@ -190,9 +249,12 @@ export class Model<T, C = any> {
       data[field] = encoder ? encoder.encode(value) : value;
     }
 
-    const { success, inserted, id } = await adapter.saveToDb(context, this, data);
-    if (!success) throw new Error("Failed to save model to database");
-    if (inserted) {
+    if (this.persisted) {
+      const { success } = await adapter.update(context, this, data);
+      if (!success) throw new Error("Failed to save model to database");
+    } else {
+      const { success, id } = await adapter.insert(context, data);
+      if (!success) throw new Error("Failed to save model to database");
       this.id = id;
     }
 
@@ -200,8 +262,19 @@ export class Model<T, C = any> {
     this.clearChangedFields();
 
     if (globalSpec?.postSave) {
-      return globalSpec.postSave(context, this);
+      globalSpec.postSave(context, this);
     }
     return this;
+  }
+
+  /**
+   * Delete the model from the database.
+   *
+   * @returns A promise that resolves to true if the deletion was successful, false otherwise.
+   */
+  public async del(): Promise<boolean> {
+    const { adapter } = (this.constructor as any).persistence;
+    const context = await adapter.getContext();
+    return adapter.del(context, this);
   }
 }

@@ -57,7 +57,7 @@ describe('Advanced Model Features', () => {
     const adapter = createSqliteAdapter("test_db", "complex_models");
     const ctx = await adapter.getContext();
     await ctx.db.run(
-      "CREATE TABLE IF NOT EXISTS complex_models (id TEXT PRIMARY KEY, name TEXT, metadata TEXT, lastUpdated TEXT)"
+      "CREATE TABLE IF NOT EXISTS complex_models (id TEXT PRIMARY KEY, name TEXT, metadata TEXT, last_updated TEXT)"
     );
   });
 
@@ -82,7 +82,7 @@ describe('Advanced Model Features', () => {
     });
 
     await model.save();
-    const loaded = await ComplexModel.load(model.id);
+    const loaded = await ComplexModel.get(model.id);
 
     expect(loaded?.get("secretKey")).toBeUndefined();
     expect(loaded?.get("name")).toBe("Test Model");
@@ -98,7 +98,7 @@ describe('Advanced Model Features', () => {
     });
 
     await model.save();
-    const loaded = await ComplexModel.load(model.id);
+    const loaded = await ComplexModel.get(model.id);
 
     expect(loaded?.get("metadata")).toEqual(metadata);
   });
@@ -113,7 +113,7 @@ describe('Advanced Model Features', () => {
     });
 
     await model.save();
-    const loaded = await ComplexModel.load(model.id);
+    const loaded = await ComplexModel.get(model.id);
 
     expect(loaded?.get("lastUpdated")).toBeInstanceOf(Date);
     expect(loaded?.get("lastUpdated").getTime()).toBe(date.getTime());
@@ -131,7 +131,7 @@ describe('Advanced Model Features', () => {
     expect(preSaveCalled).toBe(true);
     expect(postSaveCalled).toBe(true);
 
-    await ComplexModel.load(model.id);
+    await ComplexModel.get(model.id);
     expect(postLoadCalled).toBe(true);
   });
 
@@ -153,7 +153,7 @@ describe('Advanced Model Features', () => {
     model.set("name", "Updated Name");
     await model.save();
 
-    const loaded = await ComplexModel.load(model.id);
+    const loaded = await ComplexModel.get(model.id);
     expect(loaded?.get("name")).toBe("Updated Name");
     expect(loaded?.get("metadata")).toEqual({ initial: true });
     expect(preSaveCalled).toBe(true);

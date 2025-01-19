@@ -60,16 +60,72 @@ person.set({
 await person.save();
 ```
 
-The library keeps track of which fields have changed and passes them to the adapter to allow it to generate minimal database updates.
+### Reading and Writing Fields
 
-### Loading Models
+```typescript
+// Get a single field
+const firstName = person.get("firstName");
+
+// Set a single field (marks as changed)
+person.set("firstName", "Jane");
+
+// Set multiple fields (marks all as changed)
+person.set({
+  firstName: "Jane",
+  lastName: "Smith"
+});
+
+// Set fields without marking as changed
+person.put("firstName", "Jane");
+person.put({
+  firstName: "Jane",
+  lastName: "Smith"
+});
+```
+
+### Loading and Querying Models
 
 ```typescript
 // Load by ID
-const person = await Person.load("some-id");
-if (person) {
-  console.log(person.fullName());
-}
+const person = await Person.get("some-id");
+
+// Find first match by criteria
+const jane = await Person.getBy({ firstName: "Jane" });
+
+// Get all records
+const allPeople = await Person.all();
+
+// Get all matching criteria
+const adults = await Person.all({ age: 18 });
+
+// Get all with SQL query (if adapter supports it)
+const adults = await Person.all(
+  "SELECT * FROM people WHERE age > ?", [18]
+);
+```
+
+### Deleting Models
+
+```typescript
+// Delete a model
+const success = await person.del();
+```
+
+### Change Tracking
+
+```typescript
+// Check if model is persisted
+console.log(person.persisted);
+
+// Get array of changed field names
+const changes = person.getChangedFields();
+
+// Manually mark fields as changed/unchanged
+person.markChanged("firstName");
+person.markUnchanged("firstName");
+
+// Clear all change tracking
+person.clearChangedFields();
 ```
 
 ## Type Safety
@@ -132,8 +188,40 @@ Create custom adapters for different databases by implementing the `AdapterConfi
 
 ```typescript
 interface AdapterConfig<C, T> {
+  // Get the database context
   getContext(): Promise<C>;
-  getFromDb(context: C, id: any): Promise<(T & { id: string }) | null>;
-  saveToDb(context: C, model: Model<T, C>, fields: (keyof T)[]): Promise<SaveResult>;
+  
+  // Query methods
+  get(context: C, id: any): Promise<(T & { id: string }) | null>;
+  getBy(context: C, matchOrQuery: Partial<T> | string, bindValues?: any[]): Promise<(T & { id: string }) | null>;
+  all(context: C, matchOrQuery?: Partial<T> | string, bindValues?: any[]): Promise<(T & { id: string })[]>;
+  
+  // Persistence methods
+  insert(context: C, data: Partial<T>): Promise<SaveResult>;
+  update(context: C, model: Model<T>, data: Partial<T>): Promise<SaveResult>;
+  del(context: C, model: Model<T>): Promise<boolean>;
+}
+
+// The SaveResult interface for insert/update operations
+interface SaveResult {
+  success: boolean;
+  inserted: boolean;
+  id?: string;
+  rows: number;
 }
 ```
+
+Each adapter method serves a specific purpose:
+- `getContext()`: Establishes the database connection or context
+- `get()`: Retrieves a single record by ID
+- `getBy()`: Retrieves first record matching criteria or SQL query
+- `all()`: Retrieves all records, optionally filtered by criteria or SQL query
+- `insert()`: Creates a new record
+- `update()`: Updates an existing record
+- `del()`: Deletes a record
+
+The `SaveResult` interface provides detailed information about save operations:
+- `success`: Whether the operation succeeded
+- `inserted`: Whether a new record was inserted
+- `id`: The ID of the newly inserted record (for inserts)
+- `rows`: Number of rows affected

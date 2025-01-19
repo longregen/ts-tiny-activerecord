@@ -90,4 +90,62 @@ describe('Model', () => {
     expect(loadedPerson?.get("lastName")).toBe("Wilson");
     expect(loadedPerson?.get("age")).toBe(40);
   });
+
+  it('should retrieve all people', async () => {
+    // Create multiple people
+    await new Person({
+      firstName: "Alice",
+      lastName: "Johnson",
+      age: 28
+    }).save();
+
+    await new Person({
+      firstName: "Charlie",
+      lastName: "Brown",
+      age: 35
+    }).save();
+
+    const allPeople = await Person.all();
+    expect(allPeople.length).toBeGreaterThanOrEqual(2);
+    expect(allPeople[0]).toBeInstanceOf(Person);
+  });
+
+  it('should retrieve people by criteria', async () => {
+    // Create a person with specific age
+    await new Person({
+      firstName: "David",
+      lastName: "Miller",
+      age: 45
+    }).save();
+
+    const peopleAge45 = await Person.all({ age: 45 });
+    expect(peopleAge45.length).toBeGreaterThan(0);
+    expect(peopleAge45[0].get("age")).toBe(45);
+
+    const personByName = await Person.getBy({ firstName: "David" });
+    expect(personByName).not.toBeNull();
+    expect(personByName?.get("lastName")).toBe("Miller");
+  });
+
+  it('should delete a person', async () => {
+    const person = new Person({
+      firstName: "ToDelete",
+      lastName: "User",
+      age: 50
+    });
+    await person.save();
+    const id = person.id;
+
+    // Verify person exists
+    let loadedPerson = await Person.get(id);
+    expect(loadedPerson).not.toBeNull();
+
+    // Delete the person
+    const success = await person.del();
+    expect(success).toBe(true);
+
+    // Verify person no longer exists
+    loadedPerson = await Person.get(id);
+    expect(loadedPerson).toBeNull();
+  });
 });

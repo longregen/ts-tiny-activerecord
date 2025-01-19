@@ -1,4 +1,4 @@
-import { PersistenceInfo } from "./types";
+import { PersistenceInfo, WithId } from "./types";
 
 /**
  * Base class for all models. Set persistence information using the `Persistence` decorator.
@@ -143,14 +143,14 @@ export class Model<T, C = any> {
    * @returns A promise that resolves to an array of matching models.
    */
   public static async all<T, M extends Model<T, C>, C = any>(
-    this: new (...args: any[]) => M,
+    this: new (...args: any[]) => M & Model<T, C>,
     matchOrQuery?: Partial<T> | string,
     bindValues?: any[]
   ): Promise<M[]> {
     const { adapter, globalSpec } = (this as unknown as typeof Model<T, C>).getPersistence();
     const context = await adapter.getContext();
     const rows = await adapter.all(context, matchOrQuery as any, bindValues);
-    let models = rows.map((this as any).fromRow) as M[];
+    let models = rows.map(row => (this as any).fromRow(row)) as M[];
     if (globalSpec?.postLoad) {
       const promises = models.map<Promise<M>>(model => globalSpec?.postLoad?.(context, model as any) as Promise<M>);
       models = await Promise.all(promises);
@@ -210,9 +210,9 @@ export class Model<T, C = any> {
    */
   protected static fromRow<T, M extends Model<T, C>, C = any>(
     this: new (...args: any[]) => M & Model<T, C>,
-    row: any & { id: string }
+    row: WithId<T>
   ): M {
-    const { fieldSpecs } = (this as any).persistence;
+    const { fieldSpecs } = (this as unknown as typeof Model<T, C>).getPersistence();
     const data = {} as any;
     for (const key in row) {
       const fieldSpec = fieldSpecs?.[key];
@@ -231,7 +231,7 @@ export class Model<T, C = any> {
    * @returns A promise that resolves to the model instance.
    */
   public async save(): Promise<this> {
-    const { adapter, fieldSpecs, globalSpec } = (this.constructor as any).persistence as PersistenceInfo<T, C>;
+    const { adapter, fieldSpecs, globalSpec } = (this.constructor as any).getPersistence() as PersistenceInfo<T, C>;
     const fields = this.getChangedFields().filter(field => fieldSpecs?.[field]?.persist !== false);
 
     if (this.persisted && fields.length === 0) return this;

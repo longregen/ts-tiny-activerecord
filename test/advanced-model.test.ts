@@ -159,4 +159,68 @@ describe('Advanced Model Features', () => {
     expect(preSaveCalled).toBe(true);
     expect(postSaveCalled).toBe(true);
   });
+
+  it('should retrieve all models and handle encoders', async () => {
+    const date1 = new Date();
+    const date2 = new Date();
+
+    await new ComplexModel({
+      name: "Model 1",
+      metadata: { type: "test1" },
+      secretKey: "secret1",
+      lastUpdated: date1
+    }).save();
+
+    await new ComplexModel({
+      name: "Model 2",
+      metadata: { type: "test2" },
+      secretKey: "secret2",
+      lastUpdated: date2
+    }).save();
+
+    const allModels = await ComplexModel.all();
+    expect(allModels.length).toBeGreaterThanOrEqual(2);
+    expect(allModels[0].get("metadata")).toBeInstanceOf(Object);
+    expect(allModels[0].get("lastUpdated")).toBeInstanceOf(Date);
+    expect(postLoadCalled).toBe(true);
+  });
+
+  it('should retrieve models by criteria with encoded fields', async () => {
+    const date = new Date();
+    await new ComplexModel({
+      name: "Search Test",
+      metadata: { searchKey: "findMe" },
+      secretKey: "secret",
+      lastUpdated: date
+    }).save();
+
+    const foundModel = await ComplexModel.getBy({ name: "Search Test" });
+    expect(foundModel).not.toBeNull();
+    expect(foundModel?.get("metadata").searchKey).toBe("findMe");
+    expect(foundModel?.get("lastUpdated").getTime()).toBe(date.getTime());
+    expect(postLoadCalled).toBe(true);
+  });
+
+  it('should delete a model and handle lifecycle hooks', async () => {
+    const model = new ComplexModel({
+      name: "Delete Test",
+      metadata: { toDelete: true },
+      secretKey: "secret123",
+      lastUpdated: new Date()
+    });
+    await model.save();
+    const id = model.id;
+
+    // Verify model exists
+    let loadedModel = await ComplexModel.get(id);
+    expect(loadedModel).not.toBeNull();
+
+    // Delete the model
+    const success = await model.del();
+    expect(success).toBe(true);
+
+    // Verify model no longer exists
+    loadedModel = await ComplexModel.get(id);
+    expect(loadedModel).toBeNull();
+  });
 });

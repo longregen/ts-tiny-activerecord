@@ -9,7 +9,7 @@
     "build": "tsc src/index.ts",
     "test": "jest",
     "test:watch": "jest --watch",
-    "prepare": "npm run build"
+    "prepare": "tsc src/index.ts"
   },
   "dependencies": {
     "tsx": "^4.19.2",

@@ -6,10 +6,10 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc src/index.ts",
+    "build": "tsc",
     "test": "jest",
     "test:watch": "jest --watch",
-    "prepare": "tsc src/index.ts"
+    "prepare": "tsc"
   },
   "dependencies": {
     "tsx": "^4.19.2",

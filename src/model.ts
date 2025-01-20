@@ -1,10 +1,10 @@
-import { PersistenceInfo, WithId } from "./types";
+import { ModelAttributes, ModelType, PersistenceInfo, WithId, WithOptionalId } from "./types";
 
 /**
  * Base class for all models. Set persistence information using the `Persistence` decorator.
  */
-export class Model<T, C = any> {
-  protected static persistence: PersistenceInfo<any, any>;
+export class Model<T extends ModelAttributes> {
+  protected static persistence: PersistenceInfo<Model<any>>;
   protected data: T = {} as T;
   protected changedFields: Set<string> = new Set();
   protected _persisted: boolean;
@@ -15,8 +15,8 @@ export class Model<T, C = any> {
    *
    * @returns The persistence information configured for this model.
    */
-  public static getPersistence<T, C>() {
-    return this.persistence as PersistenceInfo<T, C>;
+  public static getPersistence<T extends ModelAttributes>() {
+    return this.persistence as PersistenceInfo<Model<T>>;
   }
 
   /**
@@ -68,7 +68,7 @@ export class Model<T, C = any> {
    * @param data - The data to initialize the model with.
    * @param persisted - Whether the model is already persisted to the database.
    */
-  constructor(data: T & { id?: any }, persisted: boolean = false) {
+  constructor(data: WithOptionalId<T>, persisted: boolean = false) {
     // TODO: generate ID using context
     this.id = data.id;
     const { id, ...rest } = data;
@@ -89,9 +89,9 @@ export class Model<T, C = any> {
    * @param value - The value to set the field to, if setting a single field. Ignored otherwise.
    * @returns The model instance.
    */
-  public set<K extends keyof T>(key: K, value: T[K]): Model<T, C>;
-  public set(changes: Partial<T>): Model<T, C>;
-  public set<K extends keyof T>(keyOrChanges: K | Partial<T>, value?: T[K]): Model<T, C> {
+  public set<K extends keyof T>(key: K, value: T[K]): Model<T>;
+  public set(changes: Partial<T>): Model<T>;
+  public set<K extends keyof T>(keyOrChanges: K | Partial<T>, value?: T[K]): Model<T> {
     if (typeof keyOrChanges === "string") {
       this.data[keyOrChanges as K] = value as T[K];
       this.changedFields.add(keyOrChanges);
@@ -113,9 +113,9 @@ export class Model<T, C = any> {
    * @param value - The value to set the field to, if setting a single field. Ignored otherwise.
    * @returns The model instance.
    */
-  public put<K extends keyof T>(key: K, value: T[K]): Model<T, C>;
-  public put(changes: Partial<T>): Model<T, C>;
-  public put<K extends keyof T>(keyOrChanges: K | Partial<T>, value?: T[K]): Model<T, C> {
+  public put<K extends keyof T>(key: K, value: T[K]): Model<T>;
+  public put(changes: Partial<T>): Model<T>;
+  public put<K extends keyof T>(keyOrChanges: K | Partial<T>, value?: T[K]): Model<T> {
     if (typeof keyOrChanges === "string") {
       this.data[keyOrChanges as K] = value as T[K];
     } else {
@@ -142,14 +142,14 @@ export class Model<T, C = any> {
    * @param bindValues - Optional array of values to bind to the query if using a SQL string.
    * @returns A promise that resolves to an array of matching models.
    */
-  public static async all<T, M extends Model<T, C>, C = any>(
-    this: new (...args: any[]) => M & Model<T, C>,
+  public static async all<T extends ModelAttributes, M extends Model<T>>(
+    this: new (...args: any[]) => M & Model<T>,
     matchOrQuery?: Partial<T> | string,
     bindValues?: any[]
   ): Promise<M[]> {
-    const { adapter, globalSpec } = (this as unknown as typeof Model<T, C>).getPersistence();
+    const { adapter, globalSpec } = (this as unknown as typeof Model<T>).getPersistence();
     const context = await adapter.getContext();
-    const rows = await adapter.all(context, matchOrQuery as any, bindValues);
+    const rows = await adapter.all(context, matchOrQuery, bindValues);
     let models = rows.map(row => (this as any).fromRow(row)) as M[];
     if (globalSpec?.postLoad) {
       const promises = models.map<Promise<M>>(model => globalSpec?.postLoad?.(context, model as any) as Promise<M>);
@@ -164,11 +164,11 @@ export class Model<T, C = any> {
    * @param id - The ID of the model to load.
    * @returns A promise that resolves to the loaded model, or null if it doesn't exist.
    */
-  public static async get<T, M extends Model<T, C>, C = any>(
-    this: new (...args: any[]) => M & Model<T, C>,
+  public static async get<T extends ModelAttributes, M extends Model<T>>(
+    this: new (...args: any[]) => M & Model<T>,
     id: any
   ): Promise<M | null> {
-    const { adapter, globalSpec } = (this as unknown as typeof Model<T, C>).getPersistence();
+    const { adapter, globalSpec } = (this as unknown as typeof Model<T>).getPersistence();
     const context = await adapter.getContext();
     const row = await adapter.get(context, id);
     if (!row) return null;
@@ -186,12 +186,12 @@ export class Model<T, C = any> {
    * @param bindValues - Optional array of values to bind to the query if using a SQL string.
    * @returns A promise that resolves to the matching model, or null if none found.
    */
-  public static async getBy<T, M extends Model<T, C>, C = any>(
-    this: new (...args: any[]) => M & Model<T, C>,
+  public static async getBy<T extends ModelAttributes, M extends Model<T>>(
+    this: new (...args: any[]) => M & Model<T>,
     matchOrQuery?: Partial<T> | string,
     bindValues?: any[]
   ): Promise<M | null> {
-    const { adapter, globalSpec } = (this as unknown as typeof Model<T, C>).getPersistence();
+    const { adapter, globalSpec } = (this as unknown as typeof Model<T>).getPersistence();
     const context = await adapter.getContext();
     const row = await adapter.getBy(context, matchOrQuery as any, bindValues);
     if (!row) return null;
@@ -208,11 +208,11 @@ export class Model<T, C = any> {
    * @param row - The row to create the model from.
    * @returns The created model.
    */
-  protected static fromRow<T, M extends Model<T, C>, C = any>(
-    this: new (...args: any[]) => M & Model<T, C>,
+  protected static fromRow<T extends ModelAttributes, M extends Model<T>>(
+    this: new (...args: any[]) => Model<T>,
     row: WithId<T>
   ): M {
-    const { fieldSpecs } = (this as unknown as typeof Model<T, C>).getPersistence();
+    const { fieldSpecs } = (this as unknown as typeof Model<T>).getPersistence();
     const data = {} as any;
     for (const key in row) {
       const fieldSpec = fieldSpecs?.[key];
@@ -222,7 +222,7 @@ export class Model<T, C = any> {
       }
     }
 
-    return new this(data, true);
+    return new this(data, true) as M;
   }
 
   /**
@@ -231,7 +231,7 @@ export class Model<T, C = any> {
    * @returns A promise that resolves to the model instance.
    */
   public async save(): Promise<this> {
-    const { adapter, fieldSpecs, globalSpec } = (this.constructor as any).getPersistence() as PersistenceInfo<T, C>;
+    const { adapter, fieldSpecs, globalSpec } = (this.constructor as any).getPersistence() as PersistenceInfo<Model<T>>;
     const fields = this.getChangedFields().filter(field => fieldSpecs?.[field]?.persist !== false);
 
     if (this.persisted && fields.length === 0) return this;

@@ -3,7 +3,7 @@ import { createSqliteAdapter } from "./sqlite-adapter";
 import { unlink } from 'fs/promises';
 import { existsSync } from 'fs';
 
-interface ComplexAttrs {
+type ComplexAttrs = {
   name: string;
   metadata: Record<string, any>;
   secretKey: string;

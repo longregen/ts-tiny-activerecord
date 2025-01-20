@@ -3,7 +3,7 @@ import { createSqliteAdapter } from "./sqlite-adapter";
 import { unlink } from 'fs/promises';
 import { existsSync } from 'fs';
 
-interface PersonAttrs {
+type PersonAttrs = {
   firstName: string;
   lastName: string;
   age: number;

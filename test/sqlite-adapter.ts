@@ -1,4 +1,4 @@
-import { AdapterConfig, Model, WithId } from "../src";
+import { AdapterConfig, Model, ModelAttributes, WithId } from "../src";
 import * as sqlite3 from "sqlite3";
 import { Database, open } from "sqlite";
 
@@ -29,7 +29,7 @@ function generateId() {
   return crypto.randomUUID();
 }
 
-export function createSqliteAdapter<T>(dbName: string, tableName: string): AdapterConfig<Context, T> {
+export function createSqliteAdapter<T extends ModelAttributes>(dbName: string, tableName: string): AdapterConfig<T> {
   let ctx: Context | null = null;
 
   async function getContext() {

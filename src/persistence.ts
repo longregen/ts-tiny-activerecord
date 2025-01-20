@@ -1,6 +1,6 @@
 import { AdapterConfig } from "./adapter";
 import { Model } from "./model";
-import { FieldSpecs, GlobalSpec, PersistenceInfo } from "./types";
+import { FieldSpecs, GlobalSpec, ModelAttributes, PersistenceInfo } from "./types";
 
 /**
  * Decorator to add persistence information to a model.
@@ -10,12 +10,12 @@ import { FieldSpecs, GlobalSpec, PersistenceInfo } from "./types";
  * @param globalSpec - The `GlobalSpec` to use.
  * @returns A decorator function.
  */
-export function Persistence<T = any, C = any, M extends Model<T, C> = Model<T, C>>(
-  adapter: AdapterConfig<C, T>,
+export function Persistence<T extends ModelAttributes>(
+  adapter: AdapterConfig<T>,
   fieldSpecs?: FieldSpecs<T>,
-  globalSpec?: GlobalSpec<T, C, M>
+  globalSpec?: GlobalSpec<T>
 ) {
   return function (target: any) {
-    target.persistence = { adapter, fieldSpecs, globalSpec } as PersistenceInfo<T, C, M>;
+    target.persistence = { adapter, fieldSpecs, globalSpec } as PersistenceInfo<Model<T>>;
   }
 }

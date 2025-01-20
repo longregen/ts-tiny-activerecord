@@ -1,7 +1,10 @@
 import { AdapterConfig } from "./adapter";
 import { Model } from "./model";
 
+export type ModelAttributes = Record<any, unknown>;
+
 export type WithId<T> = T & { id: any };
+export type WithOptionalId<T> = T & { id?: any };
 
 /**
  * A `ValueEncoder` is a set of functions that encode and decode values from the database to the model.
@@ -25,15 +28,18 @@ export type FieldSpecs<T> = {
   [K in keyof T]?: FieldSpec;
 }
 
-export interface GlobalSpec<T, C, M = Model<T, C>> {
-  preSave?: (context: C, model: M) => Promise<M>;
-  postSave?: (context: C, model: M) => Promise<M>;
-  postLoad?: (context: C, model: M) => Promise<M>;
+export interface GlobalSpec<T extends ModelAttributes> {
+  preSave?: (context: any, model: Model<T>) => Promise<Model<T>>;
+  postSave?: (context: any, model: Model<T>) => Promise<Model<T>>;
+  postLoad?: (context: any, model: Model<T>) => Promise<Model<T>>;
 }
 
-export interface PersistenceInfo<T, C, M extends Model<T, C> = Model<T, C>> {
-  adapter: AdapterConfig<C, T>;
-  fieldSpecs?: FieldSpecs<T>;
-  globalSpec?: GlobalSpec<T, C, M>;
+export type ModelType<M> = M extends Model<infer T> ? T : never;
+
+export interface PersistenceInfo<M extends Model<any>> {
+  adapter: AdapterConfig<ModelType<M>>;
+  fieldSpecs?: FieldSpecs<ModelType<M>>;
+  globalSpec?: GlobalSpec<ModelType<M>>;
 }
+
 

@@ -253,7 +253,7 @@ export class Model<T extends ModelAttributes> {
       const { success } = await adapter.update(context, this, data);
       if (!success) throw new Error("Failed to save model to database");
     } else {
-      const { success, id } = await adapter.insert(context, data);
+      const { success, id } = await adapter.insert(context, this, data);
       if (!success) throw new Error("Failed to save model to database");
       this.id = id;
     }

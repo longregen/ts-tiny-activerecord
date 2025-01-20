@@ -19,7 +19,7 @@ export type AdapterConfig<T extends ModelAttributes> = {
   all: (context: any, matchOrQuery?: Partial<T> | string, bindValues?: any[]) => Promise<WithId<T>[]>;
   get: (context: any, id: any) => Promise<WithId<T> | null>;
   getBy: (context: any, matchOrQuery: Partial<T> | string, bindValues?: any[]) => Promise<WithId<T> | null>;
-  insert: (context: any, data: Partial<T>) => Promise<SaveResult>;
+  insert: (context: any, model: Model<T>, data: Partial<T>) => Promise<SaveResult>;
   update: (context: any, model: Model<T>, data: Partial<T>) => Promise<SaveResult>;
   del: (context: any, model: Model<T>) => Promise<boolean>;
 }

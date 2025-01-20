@@ -69,7 +69,7 @@ export function createSqliteAdapter<T extends ModelAttributes>(dbName: string, t
     return res[0] || null;
   }
 
-  async function insert(context: Context, data: Partial<T>) {
+  async function insert(context: Context, _model: Model<T>, data: Partial<T>) {
     const id = generateId();
     const fields = Object.keys(data);
     const snakeCaseFields = fields.map(camelCaseToSnakeCase);

@@ -1,4 +1,4 @@
-import { ModelAttributes, ModelType, PersistenceInfo, WithId, WithOptionalId } from "./types";
+import { ModelAttributes, PersistenceInfo, WithId, WithOptionalId } from "./types";
 
 /**
  * Base class for all models. Set persistence information using the `Persistence` decorator.

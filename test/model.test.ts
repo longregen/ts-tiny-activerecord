@@ -120,7 +120,7 @@ describe('Model', () => {
 
     const peopleAge45 = await Person.all({ age: 45 });
     expect(peopleAge45.length).toBeGreaterThan(0);
-    expect(peopleAge45[0].get("age")).toBe(45);
+    expect(peopleAge45[0]?.get("age")).toBe(45);
 
     const personByName = await Person.getBy({ firstName: "David" });
     expect(personByName).not.toBeNull();

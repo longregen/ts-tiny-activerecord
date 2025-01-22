@@ -34,15 +34,15 @@ let postLoadCalled = false;
     lastUpdated: { encoder: dateEncoder }
   },
   {
-    preSave: async (context, model) => {
+    preSave: async (_context, model) => {
       preSaveCalled = true;
       return model;
     },
-    postSave: async (context, model) => {
+    postSave: async (_context, model) => {
       postSaveCalled = true;
       return model;
     },
-    postLoad: async (context, model) => {
+    postLoad: async (_context, model) => {
       postLoadCalled = true;
       return model;
     }
@@ -180,8 +180,8 @@ describe('Advanced Model Features', () => {
 
     const allModels = await ComplexModel.all();
     expect(allModels.length).toBeGreaterThanOrEqual(2);
-    expect(allModels[0].get("metadata")).toBeInstanceOf(Object);
-    expect(allModels[0].get("lastUpdated")).toBeInstanceOf(Date);
+    expect(allModels[0]?.get("metadata")).toBeInstanceOf(Object);
+    expect(allModels[0]?.get("lastUpdated")).toBeInstanceOf(Date);
     expect(postLoadCalled).toBe(true);
   });
 
@@ -196,7 +196,7 @@ describe('Advanced Model Features', () => {
 
     const foundModel = await ComplexModel.getBy({ name: "Search Test" });
     expect(foundModel).not.toBeNull();
-    expect(foundModel?.get("metadata").searchKey).toBe("findMe");
+    expect(foundModel?.get("metadata")?.searchKey).toBe("findMe");
     expect(foundModel?.get("lastUpdated").getTime()).toBe(date.getTime());
     expect(postLoadCalled).toBe(true);
   });

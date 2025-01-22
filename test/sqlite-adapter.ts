@@ -1,4 +1,4 @@
-import { AdapterConfig, Model, ModelAttributes, WithId } from "../src";
+import { AdapterConfig, Model, ModelAttributes, WithId } from "../src/index";
 import * as sqlite3 from "sqlite3";
 import { Database, open } from "sqlite";
 
@@ -55,7 +55,7 @@ export function createSqliteAdapter<T extends ModelAttributes>(dbName: string, t
       bindValues = Object.values(matchOrQuery);
     }
     let res = await context.db.all<WithId<T>[]>(`SELECT * FROM ${tableName} ${whereClause}`, bindValues);
-    return res.map(row => convertRowToCamelCase<WithId<T>>(row));
+    return res.map((row: WithId<T>) => convertRowToCamelCase<WithId<T>>(row));
   }
 
   async function get(context: Context, id: any) {

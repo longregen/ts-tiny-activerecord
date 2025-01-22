@@ -4,12 +4,13 @@ import { unlink } from 'fs/promises';
 import { existsSync } from 'fs';
 
 type PersonAttrs = {
+  id?: string;
   firstName: string;
   lastName: string;
   age: number;
 }
 
-@Persistence(createSqliteAdapter("test_db", "people"))
+@Persistence(createSqliteAdapter({ dbName: "test_db", tableName: "people", primaryKeyField: "id" }))
 class Person extends Model<PersonAttrs> {
   public fullName() {
     return `${this.get("firstName")} ${this.get("lastName")}`;
@@ -24,7 +25,11 @@ describe('Model', () => {
   const dbPath = '/tmp/test_db.db';
 
   beforeAll(async () => {
-    const adapter = createSqliteAdapter("test_db", "people");
+    const adapter = createSqliteAdapter({
+      dbName: "test_db",
+      tableName: "people",
+      primaryKeyField: "id"
+    });
     const ctx = await adapter.getContext();
     await ctx.db.run(
       "CREATE TABLE IF NOT EXISTS people (id TEXT PRIMARY KEY, first_name TEXT, last_name TEXT, age INTEGER)"
@@ -45,12 +50,12 @@ describe('Model', () => {
     });
 
     expect(person.persisted).toBe(false);
-    expect(person.id).toBeUndefined();
+    expect(person.get("id")).toBeUndefined();
 
     await person.save();
 
     expect(person.persisted).toBe(true);
-    expect(person.id).toBeDefined();
+    expect(person.get("id")).toBeDefined();
   });
 
   it('should load a saved person', async () => {
@@ -61,7 +66,7 @@ describe('Model', () => {
     });
     await person.save();
 
-    const loadedPerson = await Person.get(person.id);
+    const loadedPerson = await Person.get(person.get("id"));
     expect(loadedPerson).not.toBeNull();
     expect(loadedPerson?.get("firstName")).toBe("Jane");
     expect(loadedPerson?.get("lastName")).toBe("Smith");
@@ -85,7 +90,7 @@ describe('Model', () => {
     await person.save();
     expect(person.getChangedFields()).toEqual([]);
 
-    const loadedPerson = await Person.get(person.id);
+    const loadedPerson = await Person.get(person.get("id"));
     expect(loadedPerson?.get("firstName")).toBe("Robert");
     expect(loadedPerson?.get("lastName")).toBe("Wilson");
     expect(loadedPerson?.get("age")).toBe(40);
@@ -134,7 +139,7 @@ describe('Model', () => {
       age: 50
     });
     await person.save();
-    const id = person.id;
+    const id = person.get("id");
 
     // Verify person exists
     let loadedPerson = await Person.get(id);

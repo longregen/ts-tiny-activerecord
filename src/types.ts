@@ -1,10 +1,7 @@
 import { AdapterConfig } from "./adapter";
 import { Model } from "./model";
 
-export type ModelAttributes = Record<any, unknown>;
-
-export type WithId<T> = T & { id: any };
-export type WithOptionalId<T> = T & { id?: any };
+export type ModelAttributes = Record<string, unknown>;
 
 /**
  * A `ValueEncoder` is a set of functions that encode and decode values from the database to the model.
@@ -22,6 +19,7 @@ export interface ValueEncoder<T = any, R = any> {
 export interface FieldSpec {
   persist?: boolean;
   encoder?: ValueEncoder;
+  primaryKey?: boolean;
 }
 
 export type FieldSpecs<T> = {

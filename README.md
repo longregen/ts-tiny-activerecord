@@ -18,16 +18,17 @@ npm install [TBD]
 
 ## Basic Usage
 
-Define your model by extending the base `Model` class and using the `@Persistence` decorator:
+Start by creating a type (not an interface) that describes the fields of your model. Then, define your model by extending the base `Model` class and using the `@Persistence` decorator, passing in an adapter:
 
 ```typescript
-interface PersonAttrs {
+type PersonAttrs = {
+  id?: string;
   firstName: string;
   lastName: string;
   age: number;
 }
 
-@Persistence(createSqliteAdapter("mydb", "people"))
+@Persistence(createSomeAdapter(...))
 class Person extends Model<PersonAttrs> {
   public fullName() {
     return `${this.get("firstName")} ${this.get("lastName")}`;
@@ -86,7 +87,7 @@ person.put({
 ### Loading and Querying Models
 
 ```typescript
-// Load by ID
+// Load by primary key
 const person = await Person.get("some-id");
 
 // Find first match by criteria
@@ -144,7 +145,7 @@ person.set("age", "thirty");
 
 ### Custom Field Persistence
 
-You can control how fields are persisted using field specifications:
+You can control how fields are persisted passing field specifications as the second argument to the `@Persistence` decorator:
 
 ```typescript
 @Persistence(adapter, {
@@ -163,7 +164,7 @@ class AdvancedModel extends Model<Attrs> {
 
 ### Lifecycle Hooks
 
-Add global hooks for pre/post save and post load operations:
+Add global hooks for pre/post save and post load operations by passing a third argument to the `@Persistence` decorator:
 
 ```typescript
 @Persistence(adapter, fieldSpecs, {
@@ -187,16 +188,17 @@ Add global hooks for pre/post save and post load operations:
 Create custom adapters for different databases by implementing the `AdapterConfig` interface:
 
 ```typescript
-type WithId<T> = T & { id: any };
-
 interface AdapterConfig<C, T> {
+  // Get the name of the primary key field
+  getPrimaryKeyField(): string;
+
   // Get the database context
   getContext(): Promise<C>;
   
   // Query methods
-  get(context: C, id: any): Promise<WithId<T> | null>;
-  getBy(context: C, matchOrQuery: Partial<T> | string, bindValues?: any[]): Promise<WithId<T> | null>;
-  all(context: C, matchOrQuery?: Partial<T> | string, bindValues?: any[]): Promise<WithId<T>[]>;
+  get(context: C, id: any): Promise<T | null>;
+  getBy(context: C, matchOrQuery: Partial<T> | string, bindValues?: any[]): Promise<T | null>;
+  all(context: C, matchOrQuery?: Partial<T> | string, bindValues?: any[]): Promise<T[]>;
   
   // Persistence methods
   insert(context: C, data: Partial<T>): Promise<SaveResult>;
@@ -214,6 +216,7 @@ interface SaveResult {
 ```
 
 Each adapter method serves a specific purpose:
+- `getPrimaryKeyField()`: Returns the name of the primary key field
 - `getContext()`: Establishes the database connection or context
 - `get()`: Retrieves a single record by ID
 - `getBy()`: Retrieves first record matching criteria or SQL query

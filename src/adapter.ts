@@ -1,10 +1,10 @@
 import { Model } from "./model";
-import { ModelAttributes, WithId } from "./types";
+import { ModelAttributes } from "./types";
 
 export interface SaveResult {
   success: boolean;
   inserted: boolean;
-  id?: any;
+  primaryKey?: any;
   rows: number;
 }
 
@@ -15,10 +15,11 @@ export interface SaveResult {
  * @param T - The model attributes type.
  */
 export type AdapterConfig<T extends ModelAttributes> = {
+  getPrimaryKeyField: () => string;
   getContext: () => Promise<any>;
-  all: (context: any, matchOrQuery?: Partial<T> | string, bindValues?: any[]) => Promise<WithId<T>[]>;
-  get: (context: any, id: any) => Promise<WithId<T> | null>;
-  getBy: (context: any, matchOrQuery: Partial<T> | string, bindValues?: any[]) => Promise<WithId<T> | null>;
+  all: (context: any, matchOrQuery?: Partial<T> | string, bindValues?: any[]) => Promise<T[]>;
+  get: (context: any, primaryKey: any) => Promise<T | null>;
+  getBy: (context: any, matchOrQuery: Partial<T> | string, bindValues?: any[]) => Promise<T | null>;
   insert: (context: any, model: Model<T>, data: Partial<T>) => Promise<SaveResult>;
   update: (context: any, model: Model<T>, data: Partial<T>) => Promise<SaveResult>;
   del: (context: any, model: Model<T>) => Promise<boolean>;

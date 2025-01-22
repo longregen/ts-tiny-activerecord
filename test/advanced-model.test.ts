@@ -4,6 +4,7 @@ import { unlink } from 'fs/promises';
 import { existsSync } from 'fs';
 
 type ComplexAttrs = {
+  id?: string;
   name: string;
   metadata: Record<string, any>;
   secretKey: string;
@@ -27,7 +28,11 @@ let postSaveCalled = false;
 let postLoadCalled = false;
 
 @Persistence(
-  createSqliteAdapter("test_db", "complex_models"),
+  createSqliteAdapter({
+    dbName: "test_db2",
+    tableName: "complex_models",
+    primaryKeyField: "id"
+  }),
   {
     secretKey: { persist: false },
     metadata: { encoder: jsonEncoder },
@@ -51,10 +56,14 @@ let postLoadCalled = false;
 class ComplexModel extends Model<ComplexAttrs> { }
 
 describe('Advanced Model Features', () => {
-  const dbPath = '/tmp/test_db.db';
+  const dbPath = '/tmp/test_db2.db';
 
   beforeAll(async () => {
-    const adapter = createSqliteAdapter("test_db", "complex_models");
+    const adapter = createSqliteAdapter({
+      dbName: "test_db2",
+      tableName: "complex_models",
+      primaryKeyField: "id"
+    });
     const ctx = await adapter.getContext();
     await ctx.db.run(
       "CREATE TABLE IF NOT EXISTS complex_models (id TEXT PRIMARY KEY, name TEXT, metadata TEXT, last_updated TEXT)"
@@ -82,7 +91,7 @@ describe('Advanced Model Features', () => {
     });
 
     await model.save();
-    const loaded = await ComplexModel.get(model.id);
+    const loaded = await ComplexModel.get(model.get("id"));
 
     expect(loaded?.get("secretKey")).toBeUndefined();
     expect(loaded?.get("name")).toBe("Test Model");
@@ -98,7 +107,7 @@ describe('Advanced Model Features', () => {
     });
 
     await model.save();
-    const loaded = await ComplexModel.get(model.id);
+    const loaded = await ComplexModel.get(model.get("id"));
 
     expect(loaded?.get("metadata")).toEqual(metadata);
   });
@@ -113,7 +122,7 @@ describe('Advanced Model Features', () => {
     });
 
     await model.save();
-    const loaded = await ComplexModel.get(model.id);
+    const loaded = await ComplexModel.get(model.get("id"));
 
     expect(loaded?.get("lastUpdated")).toBeInstanceOf(Date);
     expect(loaded?.get("lastUpdated").getTime()).toBe(date.getTime());
@@ -131,7 +140,7 @@ describe('Advanced Model Features', () => {
     expect(preSaveCalled).toBe(true);
     expect(postSaveCalled).toBe(true);
 
-    await ComplexModel.get(model.id);
+    await ComplexModel.get(model.get("id"));
     expect(postLoadCalled).toBe(true);
   });
 
@@ -153,7 +162,7 @@ describe('Advanced Model Features', () => {
     model.set("name", "Updated Name");
     await model.save();
 
-    const loaded = await ComplexModel.get(model.id);
+    const loaded = await ComplexModel.get(model.get("id"));
     expect(loaded?.get("name")).toBe("Updated Name");
     expect(loaded?.get("metadata")).toEqual({ initial: true });
     expect(preSaveCalled).toBe(true);
@@ -209,7 +218,7 @@ describe('Advanced Model Features', () => {
       lastUpdated: new Date()
     });
     await model.save();
-    const id = model.id;
+    const id = model.get("id");
 
     // Verify model exists
     let loadedModel = await ComplexModel.get(id);

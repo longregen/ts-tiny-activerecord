@@ -1,4 +1,4 @@
-import { ModelAttributes, PersistenceInfo, WithId, WithOptionalId } from "./types";
+import { ModelAttributes, PersistenceInfo } from "./types";
 
 /**
  * Base class for all models. Set persistence information using the `Persistence` decorator.
@@ -8,7 +8,6 @@ export class Model<T extends ModelAttributes> {
   protected data: T = {} as T;
   protected changedFields: Set<string> = new Set();
   protected _persisted: boolean;
-  public id?: any;
 
   /**
    * Get the persistence information for this model class.
@@ -68,15 +67,12 @@ export class Model<T extends ModelAttributes> {
    * @param data - The data to initialize the model with.
    * @param persisted - Whether the model is already persisted to the database.
    */
-  constructor(data: WithOptionalId<T>, persisted: boolean = false) {
-    // TODO: generate ID using context
-    this.id = data.id;
-    const { id, ...rest } = data;
+  constructor(data: T, persisted: boolean = false) {
     if (persisted) {
-      this.data = rest as T;
+      this.data = data;
       this._persisted = true;
     } else {
-      this.set(rest as T);
+      this.set(data);
       this._persisted = false;
     }
   }
@@ -161,16 +157,16 @@ export class Model<T extends ModelAttributes> {
   /**
    * Load a model from the database.
    *
-   * @param id - The ID of the model to load.
+   * @param primaryKey - The ID of the model to load.
    * @returns A promise that resolves to the loaded model, or null if it doesn't exist.
    */
   public static async get<T extends ModelAttributes, M extends Model<T>>(
     this: new (...args: any[]) => M & Model<T>,
-    id: any
+    primaryKey: any
   ): Promise<M | null> {
     const { adapter, globalSpec } = (this as unknown as typeof Model<T>).getPersistence();
     const context = await adapter.getContext();
-    const row = await adapter.get(context, id);
+    const row = await adapter.get(context, primaryKey);
     if (!row) return null;
     let model = (this as any).fromRow(row) as M;
     if (globalSpec?.postLoad) {
@@ -210,7 +206,7 @@ export class Model<T extends ModelAttributes> {
    */
   protected static fromRow<T extends ModelAttributes, M extends Model<T>>(
     this: new (...args: any[]) => Model<T>,
-    row: WithId<T>
+    row: T
   ): M {
     const { fieldSpecs } = (this as unknown as typeof Model<T>).getPersistence();
     const data = {} as any;
@@ -253,9 +249,8 @@ export class Model<T extends ModelAttributes> {
       const { success } = await adapter.update(context, this, data);
       if (!success) throw new Error("Failed to save model to database");
     } else {
-      const { success, id } = await adapter.insert(context, this, data);
+      const { success } = await adapter.insert(context, this, data);
       if (!success) throw new Error("Failed to save model to database");
-      this.id = id;
     }
 
     this._persisted = true;
@@ -273,7 +268,7 @@ export class Model<T extends ModelAttributes> {
    * @returns A promise that resolves to true if the deletion was successful, false otherwise.
    */
   public async del(): Promise<boolean> {
-    const { adapter } = (this.constructor as any).persistence;
+    const { adapter } = (this.constructor as any).getPersistence() as PersistenceInfo<Model<T>>;
     const context = await adapter.getContext();
     return adapter.del(context, this);
   }

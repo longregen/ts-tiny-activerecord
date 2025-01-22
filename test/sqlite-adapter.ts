@@ -1,4 +1,4 @@
-import { AdapterConfig, Model, ModelAttributes, WithId } from "../src/index";
+import { AdapterConfig, Model, ModelAttributes } from "../src/index";
 import * as sqlite3 from "sqlite3";
 import { Database, open } from "sqlite";
 
@@ -29,8 +29,19 @@ function generateId() {
   return crypto.randomUUID();
 }
 
-export function createSqliteAdapter<T extends ModelAttributes>(dbName: string, tableName: string): AdapterConfig<T> {
+type SqliteAdapterConfig = {
+  dbName: string;
+  tableName: string;
+  primaryKeyField: string;
+}
+
+export function createSqliteAdapter<T extends ModelAttributes>(config: SqliteAdapterConfig): AdapterConfig<T> {
+  const { dbName, tableName, primaryKeyField } = config;
   let ctx: Context | null = null;
+
+  function getPrimaryKeyField() {
+    return primaryKeyField;
+  }
 
   async function getContext() {
     if (ctx) return ctx;
@@ -54,13 +65,13 @@ export function createSqliteAdapter<T extends ModelAttributes>(dbName: string, t
         .join(" AND ");
       bindValues = Object.values(matchOrQuery);
     }
-    let res = await context.db.all<WithId<T>[]>(`SELECT * FROM ${tableName} ${whereClause}`, bindValues);
-    return res.map((row: WithId<T>) => convertRowToCamelCase<WithId<T>>(row));
+    let res = await context.db.all<T[]>(`SELECT * FROM ${tableName} ${whereClause}`, bindValues);
+    return res.map((row: T) => convertRowToCamelCase<T>(row));
   }
 
-  async function get(context: Context, id: any) {
-    const res = await context.db.get<WithId<T>>(`SELECT * FROM ${tableName} WHERE id = $1`, [id]);
-    return res ? convertRowToCamelCase<WithId<T>>(res) : null;
+  async function get(context: Context, primaryKey: any) {
+    const res = await context.db.get<T>(`SELECT * FROM ${tableName} WHERE ${primaryKeyField} = $1`, [primaryKey]);
+    return res ? convertRowToCamelCase<T>(res) : null;
   }
 
   async function getBy(context: Context, matchOrQuery: Partial<T> | string, bindValues?: any[]) {
@@ -69,30 +80,36 @@ export function createSqliteAdapter<T extends ModelAttributes>(dbName: string, t
     return res[0] || null;
   }
 
-  async function insert(context: Context, _model: Model<T>, data: Partial<T>) {
-    const id = generateId();
+  async function insert(context: Context, model: Model<T>, data: Partial<T>) {
+    const primaryKey = generateId();
     const fields = Object.keys(data);
     const snakeCaseFields = fields.map(camelCaseToSnakeCase);
-    const query = `INSERT INTO ${tableName} (id, ${snakeCaseFields.join(", ")}) VALUES (?, ${fields.map(() => "?").join(", ")})`;
-    const bindValues = [id, ...fields.map(field => data[field as keyof T])];
+    const query = `INSERT INTO ${tableName} (${primaryKeyField}, ${snakeCaseFields.join(", ")}) VALUES (?, ${fields.map(() => "?").join(", ")})`;
+    const rest = Object.keys(data).filter(field => field !== primaryKeyField);
+    const bindValues = [primaryKey, ...rest.map(field => data[field as keyof T])];
     const res = await context.db.run(query, bindValues);
-    return { success: !!(res.lastID !== undefined), inserted: true, rows: res.changes || 0, id };
+    const result = { success: !!(res.lastID !== undefined), inserted: true, rows: res.changes || 0, primaryKey };
+    if (result.success) {
+      model.put(primaryKeyField, primaryKey as any);
+    }
+    return result;
   }
 
   async function update(context: Context, model: Model<T>, data: Partial<T>) {
-    const id = model.id;
-    const fields = Object.keys(data);
-    const query = `UPDATE ${tableName} SET ${fields.map((field) => `${camelCaseToSnakeCase(String(field))} = ?`).join(", ")} WHERE id = ?`;
-    const bindValues = [...fields.map(field => data[field as keyof T]), id];
+    const primaryKey = model.get(primaryKeyField);
+    const fields = Object.keys(data).filter(field => field !== primaryKeyField);
+    const snakeCaseFields = fields.map(camelCaseToSnakeCase);
+    const query = `UPDATE ${tableName} SET ${snakeCaseFields.map((field) => `${field} = ?`).join(", ")} WHERE ${primaryKeyField} = ?`;
+    const bindValues = [...fields.map(field => data[field as keyof T]), primaryKey];
     const res = await context.db.run(query, bindValues);
-    return { success: !!(res.changes && res.changes > 0), inserted: false, rows: res.changes || 0, id };
+    return { success: !!(res.changes && res.changes > 0), inserted: false, rows: res.changes || 0, primaryKey };
   }
 
   async function del(context: Context, model: Model<T>) {
-    const id = model.id;
-    const res = await context.db.run(`DELETE FROM ${tableName} WHERE id = ?`, [id]);
+    const primaryKey = model.get(primaryKeyField);
+    const res = await context.db.run(`DELETE FROM ${tableName} WHERE ${primaryKeyField} = ?`, [primaryKey]);
     return !!(res.changes && res.changes > 0);
   }
 
-  return { getContext, all, get, getBy, insert, update, del }
+  return { getPrimaryKeyField, getContext, all, get, getBy, insert, update, del }
 }

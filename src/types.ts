@@ -19,7 +19,6 @@ export interface ValueEncoder<T = any, R = any> {
 export interface FieldSpec {
   persist?: boolean;
   encoder?: ValueEncoder;
-  primaryKey?: boolean;
 }
 
 export type FieldSpecs<T> = {

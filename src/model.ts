@@ -268,6 +268,7 @@ export class Model<T extends ModelAttributes> {
    * @returns A promise that resolves to true if the deletion was successful, false otherwise.
    */
   public async del(): Promise<boolean> {
+    if (!this.persisted) throw new Error("Cannot delete unpersisted model");
     const { adapter } = (this.constructor as any).getPersistence() as PersistenceInfo<Model<T>>;
     const context = await adapter.getContext();
     return adapter.del(context, this);

@@ -8,6 +8,7 @@ type ComplexAttrs = {
   name: string;
   metadata: Record<string, any>;
   secretKey: string;
+  count: number;
   lastUpdated: Date;
 }
 
@@ -27,7 +28,7 @@ let preSaveCalled = false;
 let postSaveCalled = false;
 let postLoadCalled = false;
 
-@Persistence(
+@Persistence<ComplexAttrs>(
   createSqliteAdapter({
     dbName: "test_db2",
     tableName: "complex_models",
@@ -39,8 +40,10 @@ let postLoadCalled = false;
     lastUpdated: { encoder: dateEncoder }
   },
   {
-    preSave: async (_context, _model) => {
+    preSave: async (_context, model) => {
       preSaveCalled = true;
+      const count = model.get("count");
+      model.set("count", count + 1);
     },
     postSave: async (_context, _model) => {
       postSaveCalled = true;
@@ -63,7 +66,7 @@ describe('Advanced Model Features', () => {
     });
     const ctx = await adapter.getContext();
     await ctx.db.run(
-      "CREATE TABLE IF NOT EXISTS complex_models (id TEXT PRIMARY KEY, name TEXT, metadata TEXT, last_updated TEXT)"
+      "CREATE TABLE IF NOT EXISTS complex_models (id TEXT PRIMARY KEY, name TEXT, metadata TEXT, count INTEGER, last_updated TEXT)"
     );
   });
 
@@ -84,6 +87,7 @@ describe('Advanced Model Features', () => {
       name: "Test Model",
       metadata: { foo: "bar" },
       secretKey: "secret123",
+      count: 1,
       lastUpdated: new Date()
     });
 
@@ -100,6 +104,7 @@ describe('Advanced Model Features', () => {
       name: "JSON Test",
       metadata,
       secretKey: "secret123",
+      count: 1,
       lastUpdated: new Date()
     });
 
@@ -115,6 +120,7 @@ describe('Advanced Model Features', () => {
       name: "Date Test",
       metadata: {},
       secretKey: "secret123",
+      count: 1,
       lastUpdated: date
     });
 
@@ -130,12 +136,21 @@ describe('Advanced Model Features', () => {
       name: "Hooks Test",
       metadata: {},
       secretKey: "secret123",
+      count: 1,
       lastUpdated: new Date()
     });
 
     await model.save();
     expect(preSaveCalled).toBe(true);
     expect(postSaveCalled).toBe(true);
+    expect(model.get("count")).toBe(2);
+    preSaveCalled = false;
+    postSaveCalled = false;
+
+    await model.save();
+    expect(preSaveCalled).toBe(false);
+    expect(postSaveCalled).toBe(false);
+    expect(model.get("count")).toBe(2);
 
     await ComplexModel.get(model.get("id"));
     expect(postLoadCalled).toBe(true);
@@ -145,6 +160,7 @@ describe('Advanced Model Features', () => {
     const model = new ComplexModel({
       name: "Update Test",
       metadata: { initial: true },
+      count: 1,
       secretKey: "secret123",
       lastUpdated: new Date()
     });
@@ -174,6 +190,7 @@ describe('Advanced Model Features', () => {
       name: "Model 1",
       metadata: { type: "test1" },
       secretKey: "secret1",
+      count: 1,
       lastUpdated: date1
     }).save();
 
@@ -181,6 +198,7 @@ describe('Advanced Model Features', () => {
       name: "Model 2",
       metadata: { type: "test2" },
       secretKey: "secret2",
+      count: 1,
       lastUpdated: date2
     }).save();
 
@@ -197,6 +215,7 @@ describe('Advanced Model Features', () => {
       name: "Search Test",
       metadata: { searchKey: "findMe" },
       secretKey: "secret",
+      count: 1,
       lastUpdated: date
     }).save();
 
@@ -212,6 +231,7 @@ describe('Advanced Model Features', () => {
       name: "Delete Test",
       metadata: { toDelete: true },
       secretKey: "secret123",
+      count: 1,
       lastUpdated: new Date()
     });
     await model.save();

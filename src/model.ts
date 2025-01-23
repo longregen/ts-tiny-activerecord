@@ -228,8 +228,8 @@ export class Model<T extends ModelAttributes> {
    */
   public async save(): Promise<this> {
     const { adapter, fieldSpecs, globalSpec } = (this.constructor as any).getPersistence() as PersistenceInfo<Model<T>>;
-    const fields = this.getChangedFields().filter(field => fieldSpecs?.[field]?.persist !== false);
 
+    let fields = this.getChangedFields().filter(field => fieldSpecs?.[field]?.persist !== false);
     if (this.persisted && fields.length === 0) return this;
 
     const context = await adapter.getContext();
@@ -237,6 +237,10 @@ export class Model<T extends ModelAttributes> {
     if (globalSpec?.preSave) {
       await globalSpec.preSave(context, this);
     }
+
+    // pre-save hook may have changed additional fields
+    fields = this.getChangedFields().filter(field => fieldSpecs?.[field]?.persist !== false);
+    if (fields.length === 0) return this;
 
     const data: Partial<T> = {};
     for (const field of fields) {

@@ -28,7 +28,7 @@ type PersonAttrs = {
   age: number;
 }
 
-@Persistence(createSomeAdapter(...))
+@Persistence<PersonAttrs>(createSomeAdapter(...))
 class Person extends Model<PersonAttrs> {
   public fullName() {
     return `${this.get("firstName")} ${this.get("lastName")}`;
@@ -148,7 +148,7 @@ person.set("age", "thirty");
 You can control how fields are persisted passing field specifications as the second argument to the `@Persistence` decorator:
 
 ```typescript
-@Persistence(adapter, {
+@Persistence<MyAttrs>(adapter, {
   secretField: { persist: false },
   jsonField: {
     encoder: {
@@ -157,7 +157,7 @@ You can control how fields are persisted passing field specifications as the sec
     }
   }
 })
-class AdvancedModel extends Model<Attrs> {
+class AdvancedModel extends Model<MyAttrs> {
   // ...
 }
 ```
@@ -179,6 +179,8 @@ Add global hooks for pre/post save and post load operations by passing a third a
   }
 })
 ```
+
+Note the `preSave` hook will not be called if no fields are changed. It is possible to modify the model in the hook to add additional fields to the save operation.
 
 ### Custom Adapters
 

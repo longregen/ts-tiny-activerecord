@@ -240,7 +240,7 @@ export class Model<T extends ModelAttributes> {
 
     // pre-save hook may have changed additional fields
     fields = this.getChangedFields().filter(field => fieldSpecs?.[field]?.persist !== false);
-    if (fields.length === 0) return this;
+    if (this.persisted && fields.length === 0) return this;
 
     const data: Partial<T> = {};
     for (const field of fields) {

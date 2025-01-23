@@ -2,7 +2,7 @@
   "name": "ts-tiny-activerecord",
   "author": "Michelle Tilley",
   "description": "A tiny Active Record implementation for TypeScript",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {

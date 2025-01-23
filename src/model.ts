@@ -224,7 +224,7 @@ export class Model<T extends ModelAttributes> {
   /**
    * Save the model to the database.
    *
-   * @returns A promise that resolves to the model instance.
+   * @returns A promise that resolves to itself.
    */
   public async save(): Promise<this> {
     const { adapter, fieldSpecs, globalSpec } = (this.constructor as any).getPersistence() as PersistenceInfo<Model<T>>;

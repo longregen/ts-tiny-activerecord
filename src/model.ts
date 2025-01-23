@@ -148,8 +148,8 @@ export class Model<T extends ModelAttributes> {
     const rows = await adapter.all(context, matchOrQuery, bindValues);
     let models = rows.map(row => (this as any).fromRow(row)) as M[];
     if (globalSpec?.postLoad) {
-      const promises = models.map<Promise<M>>(model => globalSpec?.postLoad?.(context, model as any) as Promise<M>);
-      models = await Promise.all(promises);
+      const promises = models.map<Promise<void>>((model) => globalSpec?.postLoad!(context, model as any));
+      await Promise.all(promises);
     }
     return models as M[];
   }
@@ -170,7 +170,7 @@ export class Model<T extends ModelAttributes> {
     if (!row) return null;
     let model = (this as any).fromRow(row) as M;
     if (globalSpec?.postLoad) {
-      model = await globalSpec.postLoad(context, model as any) as M;
+      await globalSpec.postLoad(context, model as any);
     }
     return model;
   }
@@ -193,7 +193,7 @@ export class Model<T extends ModelAttributes> {
     if (!row) return null;
     let model = (this as any).fromRow(row) as M;
     if (globalSpec?.postLoad) {
-      model = await globalSpec.postLoad(context, model as any) as M;
+      await globalSpec.postLoad(context, model as any);
     }
     return model;
   }
@@ -257,7 +257,7 @@ export class Model<T extends ModelAttributes> {
     this.clearChangedFields();
 
     if (globalSpec?.postSave) {
-      globalSpec.postSave(context, this);
+      await globalSpec.postSave(context, this);
     }
     return this;
   }

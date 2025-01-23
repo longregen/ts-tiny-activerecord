@@ -26,9 +26,9 @@ export type FieldSpecs<T> = {
 }
 
 export interface GlobalSpec<T extends ModelAttributes> {
-  preSave?: (context: any, model: Model<T>) => Promise<Model<T>>;
-  postSave?: (context: any, model: Model<T>) => Promise<Model<T>>;
-  postLoad?: (context: any, model: Model<T>) => Promise<Model<T>>;
+  preSave?: (context: any, model: Model<T>) => Promise<void>;
+  postSave?: (context: any, model: Model<T>) => Promise<void>;
+  postLoad?: (context: any, model: Model<T>) => Promise<void>;
 }
 
 export type ModelType<M> = M extends Model<infer T> ? T : never;

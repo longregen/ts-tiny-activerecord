@@ -39,17 +39,14 @@ let postLoadCalled = false;
     lastUpdated: { encoder: dateEncoder }
   },
   {
-    preSave: async (_context, model) => {
+    preSave: async (_context, _model) => {
       preSaveCalled = true;
-      return model;
     },
-    postSave: async (_context, model) => {
+    postSave: async (_context, _model) => {
       postSaveCalled = true;
-      return model;
     },
-    postLoad: async (_context, model) => {
+    postLoad: async (_context, _model) => {
       postLoadCalled = true;
-      return model;
     }
   }
 )

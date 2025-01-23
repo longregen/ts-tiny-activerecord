@@ -170,15 +170,12 @@ Add global hooks for pre/post save and post load operations by passing a third a
 @Persistence(adapter, fieldSpecs, {
   preSave: async (context, model) => {
     // Modify model before saving
-    return model;
   },
   postSave: async (context, model) => {
     // Handle post-save operations
-    return model;
   },
   postLoad: async (context, model) => {
     // Process model after loading
-    return model;
   }
 })
 ```

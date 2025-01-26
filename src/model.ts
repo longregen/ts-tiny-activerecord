@@ -249,19 +249,22 @@ export class Model<T extends ModelAttributes> {
       data[field] = encoder ? encoder.encode(value) : value;
     }
 
+    let type: "insert" | "update";
     if (this.persisted) {
       const { success } = await adapter.update(context, this, data);
       if (!success) throw new Error("Failed to save model to database");
+      type = "update";
     } else {
       const { success } = await adapter.insert(context, this, data);
       if (!success) throw new Error("Failed to save model to database");
+      type = "insert";
     }
 
     this._persisted = true;
     this.clearChangedFields();
 
     if (globalSpec?.postSave) {
-      await globalSpec.postSave(context, this);
+      await globalSpec.postSave(context, this, type);
     }
     return this;
   }

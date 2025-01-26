@@ -173,11 +173,14 @@ Add global hooks for pre/post save and post load operations by passing a third a
     // type will be "insert" or "update"
   },
   postSave: async (context, model, type) => {
-    // Handle post-save operations
+    // Process model after saving
     // type will be "insert" or "update"
   },
   postLoad: async (context, model) => {
     // Process model after loading
+  },
+  postDelete: async (context, model) => {
+    // Process model after deleting
   }
 })
 ```

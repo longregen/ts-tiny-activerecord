@@ -168,11 +168,13 @@ Add global hooks for pre/post save and post load operations by passing a third a
 
 ```typescript
 @Persistence(adapter, fieldSpecs, {
-  preSave: async (context, model) => {
+  preSave: async (context, model, type) => {
     // Modify model before saving
+    // type will be "insert" or "update"
   },
-  postSave: async (context, model) => {
+  postSave: async (context, model, type) => {
     // Handle post-save operations
+    // type will be "insert" or "update"
   },
   postLoad: async (context, model) => {
     // Process model after loading

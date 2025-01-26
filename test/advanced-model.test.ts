@@ -24,30 +24,30 @@ const dateEncoder: ValueEncoder<Date, string> = {
   decode: (value) => new Date(value)
 };
 
-let preSaveCalled = false;
-let postSaveCalled = false;
-let postLoadCalled = false;
-let postDeleteCalled = false;
+let preSaveCalled: any = false;
+let postSaveCalled: any = false;
+let postLoadCalled: any = false;
+let postDeleteCalled: any = false;
 
 @Persistence<ComplexAttrs>(
   createSqliteAdapter({
     dbName: "test_db2",
     tableName: "complex_models",
-    primaryKeyField: "id"
+    primaryKeyField: "id",
   }),
   {
     secretKey: { persist: false },
     metadata: { encoder: jsonEncoder },
-    lastUpdated: { encoder: dateEncoder }
+    lastUpdated: { encoder: dateEncoder },
   },
   {
-    preSave: async (_context, model) => {
-      preSaveCalled = true;
+    preSave: async (_context, model, type) => {
+      preSaveCalled = type;
       const count = model.get("count");
       model.set("count", count + 1);
     },
-    postSave: async (_context, _model) => {
-      postSaveCalled = true;
+    postSave: async (_context, _model, type) => {
+      postSaveCalled = type;
     },
     postLoad: async (_context, _model) => {
       postLoadCalled = true;
@@ -57,16 +57,16 @@ let postDeleteCalled = false;
     },
   }
 )
-class ComplexModel extends Model<ComplexAttrs> { }
+class ComplexModel extends Model<ComplexAttrs> {}
 
-describe('Advanced Model Features', () => {
-  const dbPath = '/tmp/test_db2.db';
+describe("Advanced Model Features", () => {
+  const dbPath = "/tmp/test_db2.db";
 
   beforeAll(async () => {
     const adapter = createSqliteAdapter({
       dbName: "test_db2",
       tableName: "complex_models",
-      primaryKeyField: "id"
+      primaryKeyField: "id",
     });
     const ctx = await adapter.getContext();
     await ctx.db.run(
@@ -87,13 +87,13 @@ describe('Advanced Model Features', () => {
     postDeleteCalled = false;
   });
 
-  it('should handle non-persisted fields', async () => {
+  it("should handle non-persisted fields", async () => {
     const model = new ComplexModel({
       name: "Test Model",
       metadata: { foo: "bar" },
       secretKey: "secret123",
       count: 1,
-      lastUpdated: new Date()
+      lastUpdated: new Date(),
     });
 
     await model.save();
@@ -103,14 +103,14 @@ describe('Advanced Model Features', () => {
     expect(loaded?.get("name")).toBe("Test Model");
   });
 
-  it('should encode and decode JSON fields', async () => {
+  it("should encode and decode JSON fields", async () => {
     const metadata = { foo: "bar", num: 123, nested: { test: true } };
     const model = new ComplexModel({
       name: "JSON Test",
       metadata,
       secretKey: "secret123",
       count: 1,
-      lastUpdated: new Date()
+      lastUpdated: new Date(),
     });
 
     await model.save();
@@ -119,14 +119,14 @@ describe('Advanced Model Features', () => {
     expect(loaded?.get("metadata")).toEqual(metadata);
   });
 
-  it('should encode and decode Date fields', async () => {
+  it("should encode and decode Date fields", async () => {
     const date = new Date();
     const model = new ComplexModel({
       name: "Date Test",
       metadata: {},
       secretKey: "secret123",
       count: 1,
-      lastUpdated: date
+      lastUpdated: date,
     });
 
     await model.save();
@@ -136,18 +136,18 @@ describe('Advanced Model Features', () => {
     expect(loaded?.get("lastUpdated").getTime()).toBe(date.getTime());
   });
 
-  it('should call lifecycle hooks', async () => {
+  it("should call lifecycle hooks", async () => {
     const model = new ComplexModel({
       name: "Hooks Test",
       metadata: {},
       secretKey: "secret123",
       count: 1,
-      lastUpdated: new Date()
+      lastUpdated: new Date(),
     });
 
     await model.save();
-    expect(preSaveCalled).toBe(true);
-    expect(postSaveCalled).toBe(true);
+    expect(preSaveCalled).toBe("insert");
+    expect(postSaveCalled).toBe("insert");
     expect(model.get("count")).toBe(2);
     preSaveCalled = false;
     postSaveCalled = false;
@@ -161,13 +161,13 @@ describe('Advanced Model Features', () => {
     expect(postLoadCalled).toBe(true);
   });
 
-  it('should only encode changed fields on update', async () => {
+  it("should only encode changed fields on update", async () => {
     const model = new ComplexModel({
       name: "Update Test",
       metadata: { initial: true },
       count: 1,
       secretKey: "secret123",
-      lastUpdated: new Date()
+      lastUpdated: new Date(),
     });
 
     await model.save();
@@ -183,11 +183,11 @@ describe('Advanced Model Features', () => {
     const loaded = await ComplexModel.get(model.get("id"));
     expect(loaded?.get("name")).toBe("Updated Name");
     expect(loaded?.get("metadata")).toEqual({ initial: true });
-    expect(preSaveCalled).toBe(true);
-    expect(postSaveCalled).toBe(true);
+    expect(preSaveCalled).toBe("update");
+    expect(postSaveCalled).toBe("update");
   });
 
-  it('should retrieve all models and handle encoders', async () => {
+  it("should retrieve all models and handle encoders", async () => {
     const date1 = new Date();
     const date2 = new Date();
 
@@ -196,7 +196,7 @@ describe('Advanced Model Features', () => {
       metadata: { type: "test1" },
       secretKey: "secret1",
       count: 1,
-      lastUpdated: date1
+      lastUpdated: date1,
     }).save();
 
     await new ComplexModel({
@@ -204,7 +204,7 @@ describe('Advanced Model Features', () => {
       metadata: { type: "test2" },
       secretKey: "secret2",
       count: 1,
-      lastUpdated: date2
+      lastUpdated: date2,
     }).save();
 
     const allModels = await ComplexModel.all();
@@ -214,14 +214,14 @@ describe('Advanced Model Features', () => {
     expect(postLoadCalled).toBe(true);
   });
 
-  it('should retrieve models by criteria with encoded fields', async () => {
+  it("should retrieve models by criteria with encoded fields", async () => {
     const date = new Date();
     await new ComplexModel({
       name: "Search Test",
       metadata: { searchKey: "findMe" },
       secretKey: "secret",
       count: 1,
-      lastUpdated: date
+      lastUpdated: date,
     }).save();
 
     const foundModel = await ComplexModel.getBy({ name: "Search Test" });
@@ -231,13 +231,13 @@ describe('Advanced Model Features', () => {
     expect(postLoadCalled).toBe(true);
   });
 
-  it('should delete a model and handle lifecycle hooks', async () => {
+  it("should delete a model and handle lifecycle hooks", async () => {
     const model = new ComplexModel({
       name: "Delete Test",
       metadata: { toDelete: true },
       secretKey: "secret123",
       count: 1,
-      lastUpdated: new Date()
+      lastUpdated: new Date(),
     });
     await model.save();
     const id = model.get("id");

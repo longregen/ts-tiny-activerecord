@@ -27,6 +27,7 @@ const dateEncoder: ValueEncoder<Date, string> = {
 let preSaveCalled = false;
 let postSaveCalled = false;
 let postLoadCalled = false;
+let postDeleteCalled = false;
 
 @Persistence<ComplexAttrs>(
   createSqliteAdapter({
@@ -50,7 +51,10 @@ let postLoadCalled = false;
     },
     postLoad: async (_context, _model) => {
       postLoadCalled = true;
-    }
+    },
+    postDelete: async (_context, _model) => {
+      postDeleteCalled = true;
+    },
   }
 )
 class ComplexModel extends Model<ComplexAttrs> { }
@@ -80,6 +84,7 @@ describe('Advanced Model Features', () => {
     preSaveCalled = false;
     postSaveCalled = false;
     postLoadCalled = false;
+    postDeleteCalled = false;
   });
 
   it('should handle non-persisted fields', async () => {
@@ -248,5 +253,6 @@ describe('Advanced Model Features', () => {
     // Verify model no longer exists
     loadedModel = await ComplexModel.get(id);
     expect(loadedModel).toBeNull();
+    expect(postDeleteCalled).toBe(true);
   });
 });

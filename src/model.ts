@@ -273,8 +273,17 @@ export class Model<T extends ModelAttributes> {
    */
   public async del(): Promise<boolean> {
     if (!this.persisted) throw new Error("Cannot delete unpersisted model");
-    const { adapter } = (this.constructor as any).getPersistence() as PersistenceInfo<Model<T>>;
+    const { adapter, globalSpec } = (
+      this.constructor as any
+    ).getPersistence() as PersistenceInfo<Model<T>>;
     const context = await adapter.getContext();
-    return adapter.del(context, this);
+
+    const success = await adapter.del(context, this);
+
+    if (success && globalSpec?.postDelete) {
+      await globalSpec.postDelete(context, this);
+    }
+
+    return success;
   }
 }

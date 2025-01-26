@@ -234,12 +234,21 @@ export class Model<T extends ModelAttributes> {
 
     const context = await adapter.getContext();
 
+    let type: "insert" | "update";
+    if (this.persisted) {
+      type = "update";
+    } else {
+      type = "insert";
+    }
+
     if (globalSpec?.preSave) {
-      await globalSpec.preSave(context, this);
+      await globalSpec.preSave(context, this, type);
     }
 
     // pre-save hook may have changed additional fields
-    fields = this.getChangedFields().filter(field => fieldSpecs?.[field]?.persist !== false);
+    fields = this.getChangedFields().filter(
+      (field) => fieldSpecs?.[field]?.persist !== false
+    );
     if (this.persisted && fields.length === 0) return this;
 
     const data: Partial<T> = {};
@@ -249,7 +258,6 @@ export class Model<T extends ModelAttributes> {
       data[field] = encoder ? encoder.encode(value) : value;
     }
 
-    let type: "insert" | "update";
     if (this.persisted) {
       const { success } = await adapter.update(context, this, data);
       if (!success) throw new Error("Failed to save model to database");

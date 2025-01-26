@@ -41,8 +41,8 @@ let postDeleteCalled: any = false;
     lastUpdated: { encoder: dateEncoder },
   },
   {
-    preSave: async (_context, model) => {
-      preSaveCalled = true;
+    preSave: async (_context, model, type) => {
+      preSaveCalled = type;
       const count = model.get("count");
       model.set("count", count + 1);
     },
@@ -146,7 +146,7 @@ describe("Advanced Model Features", () => {
     });
 
     await model.save();
-    expect(preSaveCalled).toBe(true);
+    expect(preSaveCalled).toBe("insert");
     expect(postSaveCalled).toBe("insert");
     expect(model.get("count")).toBe(2);
     preSaveCalled = false;
@@ -183,7 +183,7 @@ describe("Advanced Model Features", () => {
     const loaded = await ComplexModel.get(model.get("id"));
     expect(loaded?.get("name")).toBe("Updated Name");
     expect(loaded?.get("metadata")).toEqual({ initial: true });
-    expect(preSaveCalled).toBe(true);
+    expect(preSaveCalled).toBe("update");
     expect(postSaveCalled).toBe("update");
   });
 

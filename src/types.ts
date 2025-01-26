@@ -26,7 +26,11 @@ export type FieldSpecs<T> = {
 }
 
 export interface GlobalSpec<T extends ModelAttributes> {
-  preSave?: (context: any, model: Model<T>) => Promise<void>;
+  preSave?: (
+    context: any,
+    model: Model<T>,
+    type: "insert" | "update"
+  ) => Promise<void>;
   postSave?: (
     context: any,
     model: Model<T>,
